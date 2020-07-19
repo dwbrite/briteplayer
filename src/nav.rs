@@ -1,15 +1,9 @@
 use gtk::prelude::*;
-use gtk::{Widget};
 use std::rc::Rc;
 use std::sync::Mutex;
-use std::ops::DerefMut;
-use crate::{GreatBambino, build_artists_albums_songs};
+use crate::{GreatBambino};
 
-// struct NavRow {
-//     label: gtk::Label,
-//     view_widget: Option<gtk::Widget>,
-//     is_header: bool,
-// }
+use crate::views::ContentView;
 
 enum NavRowType {
     SectionTitle,
@@ -18,13 +12,12 @@ enum NavRowType {
 
 struct NavItem {
     row_type: NavRowType,
-    label: gtk::Label,
-
+    _label: gtk::Label,
     list_row: gtk::ListBoxRow,
 }
 
 impl NavItem {
-    fn from_widget(name: &str, widget: gtk::Widget) -> NavItem {
+    fn from_view(name: &str, view: &dyn ContentView) -> NavItem {
         let label = gtk::LabelBuilder::new()
             .label(name)
             .halign(gtk::Align::Start)
@@ -32,7 +25,7 @@ impl NavItem {
             .margin_bottom(2)
             .margin_start(12).build();
 
-        NavItem::_from_row(NavRowType::Item(widget), label)
+        NavItem::_from_row(NavRowType::Item(view.get_widget()), label)
     }
 
     fn from_title(title: &str) -> NavItem {
@@ -49,7 +42,7 @@ impl NavItem {
     }
 
     fn _from_placeholder(name: &str) -> NavItem {
-        NavItem::from_widget(name, default_music_view())
+        NavItem::from_view(name, &crate::views::_Blank::new())
     }
 
     fn _from_row(row_type: NavRowType, label: gtk::Label) -> NavItem {
@@ -68,7 +61,7 @@ impl NavItem {
 
         NavItem {
             row_type,
-            label,
+            _label: label,
             list_row: row
         }
     }
@@ -91,7 +84,7 @@ impl NavTree {
         }
 
         let gbrc = gb.clone();
-        list.connect_row_selected(move |this, row| {
+        list.connect_row_selected(move |_this, row| {
             if row.is_none() { return }
 
             match &src.clone().find_item(&row.unwrap()).unwrap().row_type {
@@ -118,10 +111,12 @@ impl NavTree {
     }
 
     pub fn default_nav_tree() -> NavTree {
+        let music_view = crate::views::vmusic::MusicView::new();
+
         NavTree {
             items: vec![
                 NavItem::from_title("<b>Library</b>"),
-                NavItem::from_widget("Music", build_artists_albums_songs().upcast::<gtk::Widget>()),
+                NavItem::from_view("Music", &music_view),
                 NavItem::_from_placeholder("Podcasts"),
                 NavItem::_from_placeholder("Soundcloud"),
                 NavItem::_from_placeholder("SomaFM"),
@@ -132,10 +127,4 @@ impl NavTree {
             ],
         }
     }
-}
-
-fn default_music_view() -> Widget {
-    let pane = gtk::Paned::new(gtk::Orientation::Vertical);
-    pane.pack1(&gtk::Entry::new(), true, false);
-    pane.upcast::<gtk::Widget>()
 }

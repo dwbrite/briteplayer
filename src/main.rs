@@ -2,6 +2,9 @@ extern crate glib;
 extern crate gtk;
 extern crate gio;
 extern crate gdk;
+extern crate gstreamer as gst;
+
+use gst::prelude::*;
 
 // To import all needed traits.
 use gtk::prelude::*;
@@ -10,46 +13,13 @@ use gio::prelude::*;
 use std::rc::Rc;
 use std::sync::Mutex;
 use std::env;
-use gtk::Widget;
+use crate::views::vmusic::MusicView;
+use crate::views::ContentView;
 
 mod nav;
+mod views;
 
-fn build_artists_albums_songs() -> gtk::Paned {
-    let vpane = gtk::Paned::new(gtk::Orientation::Vertical);
-    let hpane = gtk::Paned::new(gtk::Orientation::Horizontal);
-
-    let artists = {
-        let vbox = gtk::Box::new(gtk::Orientation::Vertical, 0);
-        vbox.pack_start(&gtk::Label::new(Some("<b><i>Artists</i></b>")), false, false, 0);
-        vbox.pack_end(&build_library_list(), true, true, 0);
-        vbox
-    };
-
-    let albums = {
-        let vbox = gtk::Box::new(gtk::Orientation::Vertical, 0);
-        vbox.pack_start(&gtk::Label::new(Some("<b><i>Albums</i></b>")), false, false, 0);
-        vbox.pack_end(&build_library_list(), true, true, 0);
-        vbox
-    };
-
-    let songs = {
-        let vbox = gtk::Box::new(gtk::Orientation::Vertical, 0);
-        vbox.pack_start(&gtk::Label::new(Some("<b><i>Songs</i></b>")), false, false, 0);
-        vbox.pack_end(&build_library_list(), true, true, 0);
-        vbox
-    };
-
-    hpane.add1(&artists);
-    hpane.add2(&albums);
-    vpane.add1(&hpane);
-    vpane.add2(&songs);
-
-    vpane.show_all();
-
-    vpane
-}
-
-mod LibraryItem {
+mod library_item {
     use gtk::{LabelExt, WidgetExt, ContainerExt, Inhibit};
     use gtk::prelude::Cast;
 
@@ -77,16 +47,15 @@ mod LibraryItem {
 }
 
 
-
 fn build_library_list() -> gtk::ScrolledWindow {
     let list = gtk::ListBox::new();
 
     //list.add(&box_.upcast::<gtk::Widget>());
-    list.add(&LibraryItem::from_markup("<b>Library</b>"));
-    list.add(&LibraryItem::from_markup("Music"));
-    list.add(&LibraryItem::from_markup("Podcasts"));
-    list.add(&LibraryItem::from_markup("Lorem Ipsum"));
-    list.add(&LibraryItem::from_markup("Dolor"));
+    list.add(&library_item::from_markup("<b>Library</b>"));
+    list.add(&library_item::from_markup("Music"));
+    list.add(&library_item::from_markup("Podcasts"));
+    list.add(&library_item::from_markup("Lorem Ipsum"));
+    list.add(&library_item::from_markup("Dolor"));
 
 
     let scrollbox = gtk::ScrolledWindow::new::<gtk::Adjustment, gtk::Adjustment>(None, None);
@@ -138,7 +107,7 @@ fn build_ui(app: &gtk::Application) {
     let gbwin = &nav::NavTree::get_nav_window(src, &gb);
     let mut gbmut = gb.lock().unwrap();
     gbmut.set_nav(gbwin);
-    gbmut.set_view(&build_artists_albums_songs());
+    gbmut.set_view(&MusicView::new().get_widget());
 
     gbmut.panes.set_position(320);
 
