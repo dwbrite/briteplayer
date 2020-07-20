@@ -77,6 +77,7 @@ dependencies = [
 name = "briteplayer"
 version = "0.1.0"
 dependencies = [
+ "crossbeam-channel",
  "directories-next",
  "gdk",
  "gio",
@@ -129,6 +130,16 @@ name = "constant_time_eq"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
+
+[[package]]
+name = "crossbeam-channel"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cced8691919c02aac3cb0a1bc2e9b73d89e832bf9a06fc579d4e71b68a2da061"
+dependencies = [
+ "crossbeam-utils",
+ "maybe-uninit",
+]
 
 [[package]]
 name = "crossbeam-utils"
@@ -539,6 +550,12 @@ name = "libc"
 version = "0.2.72"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a9f8082297d534141b30c8d39e9b1773713ab50fdbe4ff30f750d063b3bfd701"
+
+[[package]]
+name = "maybe-uninit"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60302e4db3a61da70c0cb7991976248362f30319e88850c487b9b95bbf059e00"
 
 [[package]]
 name = "memchr"
