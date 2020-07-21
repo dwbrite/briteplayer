@@ -5,126 +5,150 @@ use crate::{GreatBambino};
 
 use crate::views::ContentView;
 
-enum NavRowType {
-    SectionTitle,
-    Item(gtk::Widget)
+struct NavItemModel {
+    title: String,
+    idk: Option<u32>
 }
 
-struct NavItem {
-    row_type: NavRowType,
-    _label: gtk::Label,
-    list_row: gtk::ListBoxRow,
+struct NavSectionModel {
+    title: String,
+    children: Vec<NavItemModel>
 }
 
-impl NavItem {
-    fn from_view(name: &str, view: &dyn ContentView) -> NavItem {
-        let label = gtk::LabelBuilder::new()
-            .label(name)
-            .halign(gtk::Align::Start)
-            .margin(1)
-            .margin_bottom(2)
-            .margin_start(12).build();
+impl NavSectionModel {
+    fn from_vec(title: &str, child_titles: Vec<&str>) -> Self {
+        use std::iter;
+        let children: Vec<NavItemModel> = child_titles.into_iter().map(|name| -> NavItemModel {
+            NavItemModel { title: String::from(name), idk: None }
+        }).collect();
 
-        NavItem::_from_row(NavRowType::Item(view.get_widget()), label)
+        Self {
+            title: String::from(title),
+            children
+        }
     }
+}
 
-    fn from_title(title: &str) -> NavItem {
-        let label = gtk::LabelBuilder::new()
-            .label(title)
-            .use_markup(true)
-            .halign(gtk::Align::Start)
-            .margin(4)
-            .margin_bottom(6)
-            .margin_start(6)
-            .build();
+pub(crate) struct NavModel {
+    sections: Vec<NavSectionModel>
+}
 
-        NavItem::_from_row(NavRowType::SectionTitle, label)
+impl Default for NavModel {
+    fn default() -> Self {
+        let sections = vec![
+            NavSectionModel::from_vec("Library", vec![
+                "Music", "Soundcloud", "SomaFM"
+            ]),
+            NavSectionModel::from_vec("Podcasts", vec![
+                "James Earl Jones", "SpaceJam", "How I Met Your Mother"
+            ]),
+        ];
+
+        Self { sections }
     }
+}
 
-    fn _from_placeholder(name: &str) -> NavItem {
-        NavItem::from_view(name, &crate::views::_Blank::new())
+pub(crate) struct NavController<T: NavView> {
+    model: NavModel,
+    pub(crate) view: T,
+}
+
+impl<T: NavView> NavController<T> {
+    pub(crate) fn from_model(model: NavModel) -> Self {
+        let view = T::build_view(&model);
+        Self {
+            model,
+            view,
+        }
     }
+}
 
-    fn _from_row(row_type: NavRowType, label: gtk::Label) -> NavItem {
-        let row = gtk::ListBoxRowBuilder::new();
+pub(crate) struct GtkNavView {
+    root: gtk::ScrolledWindow,
+    list: gtk::ListBox,
+    list_items: Vec<NavListItem>,
+}
 
-        let row = match row_type {
-            NavRowType::SectionTitle => {
-                row.activatable(false).selectable(false).build()
-            },
-            NavRowType::Item(_) => {
-                row.build()
-            },
+struct NavListItem {
+    row: gtk::ListBoxRow,
+    label: gtk::Label,
+}
+
+impl NavView for GtkNavView {
+    fn build_view(model: &NavModel) -> Self {
+
+        let mut nav_view = GtkNavView {
+            root: gtk::ScrolledWindow::new::<gtk::Adjustment, gtk::Adjustment>(None, None),
+            list: gtk::ListBox::new(),
+            list_items: vec![],
         };
 
-        row.add(&label);
+        for section in &model.sections {
+            let section_label = gtk::LabelBuilder::new()
+                .label(&format!("<b>{}</b>", &section.title))
+                .use_markup(true)
+                .halign(gtk::Align::Start)
+                .margin(4)
+                .margin_bottom(6)
+                .margin_start(6)
+                .build();
 
-        NavItem {
-            row_type,
-            _label: label,
-            list_row: row
-        }
-    }
-}
+            let section_row = gtk::ListBoxRowBuilder::new()
+                .activatable(false).selectable(false).build();
+            section_row.add(&section_label);
 
-// TODO: make this more tree-like, perhaps
-pub struct NavTree {
-    items: Vec<NavItem>,
-}
+            nav_view.list.add(&section_row);
+            nav_view.list_items.push(NavListItem { row: section_row, label: section_label });
 
-impl NavTree {
-    pub fn get_nav_window(src: Rc<NavTree>, gb: &Rc<Mutex<GreatBambino>>) -> gtk::ScrolledWindow {
-        let window = gtk::ScrolledWindow::new::<gtk::Adjustment, gtk::Adjustment>(None, None);
 
-        let list = gtk::ListBox::new();
+            for child in &section.children {
+                let child_label = gtk::LabelBuilder::new()
+                    .label(&child.title).halign(gtk::Align::Start)
+                    .margin(1).margin_bottom(2).margin_start(12).build();
+                let child_row = gtk::ListBoxRow::new();
+                child_row.add(&child_label);
 
-        // TODO: hbox w/ icon
-        for item in &src.items {
-            list.add(&item.list_row);
-        }
-
-        let gbrc = gb.clone();
-        list.connect_row_selected(move |_this, row| {
-            if row.is_none() { return }
-
-            match &src.clone().find_item(&row.unwrap()).unwrap().row_type {
-                NavRowType::SectionTitle => { },
-                NavRowType::Item(w) => {
-                    let mut gbmut = gbrc.try_lock().unwrap();
-                    gbmut.set_view(&mut w.clone());
-                },
-            }
-        });
-
-        window.add(&list);
-
-        window
-    }
-
-    fn find_item(&self, row: &gtk::ListBoxRow) -> Option<&NavItem> {
-        for item in &self.items {
-            if item.list_row.eq(row) {
-                return Some(item)
+                nav_view.list.add(&child_row);
+                nav_view.list_items.push(NavListItem { row: child_row, label: child_label });
             }
         }
-        return None
-    }
 
-    pub fn default_nav_tree() -> NavTree {
-        let music_view = crate::views::vmusic::MusicView::new();
-
-        NavTree {
-            items: vec![
-                NavItem::from_title("<b>Library</b>"),
-                NavItem::from_view("Music", &music_view),
-                NavItem::_from_placeholder("Podcasts"),
-                NavItem::_from_placeholder("Soundcloud"),
-                NavItem::_from_placeholder("SomaFM"),
-                NavItem::from_title("<b>Podcasts</b>"),
-                NavItem::_from_placeholder("James Earl Jones"),
-                NavItem::_from_placeholder("SpaceJam"),
-                NavItem::_from_placeholder("How I Met Your Mother"),
-            ],
-        }
+        nav_view.root.add(&nav_view.list);
+        nav_view
     }
 }
+
+impl View for GtkNavView {
+    type T = gtk::ScrolledWindow;
+
+    fn get_view(&self) -> Self::T {
+        self.root.clone()
+    }
+}
+
+pub(crate) trait NavView: View {
+    fn build_view(model: &NavModel) -> Self;
+}
+
+pub(crate) trait View {
+    type T;
+    fn get_view(&self) -> Self::T;
+}
+
+
+// impl NavTree {
+//     pub fn get_nav_window(src: Rc<NavTree>, gb: &Rc<Mutex<GreatBambino>>) -> gtk::ScrolledWindow {
+//         ...
+//         let gbrc = gb.clone();
+//         list.connect_row_selected(move |_this, row| {
+//             if row.is_none() { return }
+//
+//             match &src.clone().find_item(&row.unwrap()).unwrap().row_type {
+//                 NavRowType::SectionTitle => { },
+//                 NavRowType::Item(w) => {
+//                     let mut gbmut = gbrc.try_lock().unwrap();
+//                     gbmut.set_view(&mut w.clone());
+//                 },
+//             }
+//         });
+//     }

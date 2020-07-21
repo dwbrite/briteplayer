@@ -15,6 +15,8 @@ use std::{env, thread};
 use crate::views::vmusic::MusicView;
 use crate::views::ContentView;
 use crossbeam_channel::unbounded;
+use gdk::EventType;
+use crate::nav::View;
 
 mod nav;
 mod views;
@@ -285,10 +287,10 @@ fn build_ui(app: &gtk::Application) {
     });
 
 
-    let src = Rc::new(nav::NavTree::default_nav_tree());
+    // let src = Rc::new(nav::NavTree::default_nav_tree());
     let gb = Rc::new(Mutex::new(GreatBambino { panes, vbox, window, sender: s1 }));
 
-    let gbwin = &nav::NavTree::get_nav_window(src, &gb);
+    let gbwin = &nav::NavController::<nav::GtkNavView>::from_model(nav::NavModel::default()).view.get_view();
     let mut gbmut = gb.lock().unwrap();
     gbmut.set_nav(gbwin);
     gbmut.set_view(&MusicView::new().get_widget());
