@@ -1,9 +1,7 @@
 use gtk::prelude::*;
 use std::rc::Rc;
 use std::sync::Mutex;
-use crate::{GreatBambino};
-
-use crate::views::ContentView;
+use crate::{GreatBambino, View};
 
 struct NavItemModel {
     title: String,
@@ -55,11 +53,15 @@ pub(crate) struct NavController<T: NavView> {
 
 impl<T: NavView> NavController<T> {
     pub(crate) fn from_model(model: NavModel) -> Self {
-        let view = T::build_view(&model);
+        let view = T::from_model(&model);
         Self {
             model,
             view,
         }
+    }
+
+    fn select_scene(tx: crossbeam_channel::Sender<TMP>, scene: &str) {
+        tx.send(TMP::PH);
     }
 }
 
@@ -75,7 +77,7 @@ struct NavListItem {
 }
 
 impl NavView for GtkNavView {
-    fn build_view(model: &NavModel) -> Self {
+    fn from_model(model: &NavModel) -> Self {
 
         let mut nav_view = GtkNavView {
             root: gtk::ScrolledWindow::new::<gtk::Adjustment, gtk::Adjustment>(None, None),
@@ -113,42 +115,28 @@ impl NavView for GtkNavView {
             }
         }
 
+        nav_view.list.connect_row_activated(|_this, row| {
+            // if row.is_none() { return }
+
+
+        });
+
         nav_view.root.add(&nav_view.list);
         nav_view
     }
 }
 
 impl View for GtkNavView {
-    type T = gtk::ScrolledWindow;
+    type UI = gtk::ScrolledWindow;
 
-    fn get_view(&self) -> Self::T {
+    fn get_ui(&self) -> Self::UI {
         self.root.clone()
     }
 }
 
+enum TMP { PH }
+
 pub(crate) trait NavView: View {
-    fn build_view(model: &NavModel) -> Self;
+    fn from_model(model: &NavModel) -> Self;
+    // fn get_sender(&self) -> crossbeam_channel::Sender<TMP>;
 }
-
-pub(crate) trait View {
-    type T;
-    fn get_view(&self) -> Self::T;
-}
-
-
-// impl NavTree {
-//     pub fn get_nav_window(src: Rc<NavTree>, gb: &Rc<Mutex<GreatBambino>>) -> gtk::ScrolledWindow {
-//         ...
-//         let gbrc = gb.clone();
-//         list.connect_row_selected(move |_this, row| {
-//             if row.is_none() { return }
-//
-//             match &src.clone().find_item(&row.unwrap()).unwrap().row_type {
-//                 NavRowType::SectionTitle => { },
-//                 NavRowType::Item(w) => {
-//                     let mut gbmut = gbrc.try_lock().unwrap();
-//                     gbmut.set_view(&mut w.clone());
-//                 },
-//             }
-//         });
-//     }
