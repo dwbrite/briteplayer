@@ -11,6 +11,8 @@ pub(crate) fn default_scene() -> SceneController<GtkSceneView> {
     }
 }
 
+pub(crate) type GtkScene = SceneController<GtkSceneView>;
+
 pub(crate) struct SceneController<T: SceneView> {
     pub(crate) view: T,
 }

@@ -1,6 +1,5 @@
 mod universe;
 
-#[macro_use]
 extern crate crossbeam_channel;
 extern crate glib;
 extern crate gtk;
@@ -11,12 +10,10 @@ extern crate gdk;
 use gtk::prelude::*;
 use gio::prelude::*;
 
-use std::rc::Rc;
-use std::sync::Mutex;
-use std::{env, thread};
-use crossbeam_channel::unbounded;
-use gdk::EventType;
-use crate::universe::{GtkUniverseView, UniverseModel, UniverseView};
+use std::{env};
+use crate::universe::{GtkUniverseView, UniverseModel, UniverseView, UniverseController, UniverseSignal, GtkUniverse};
+use crate::scenes::{SceneController, GtkScene};
+use std::collections::HashMap;
 
 mod nav;
 mod scenes;
@@ -51,24 +48,36 @@ mod player;
 fn build_universe(app: &gtk::Application) {
     let window = gtk::ApplicationWindow::new(app);
 
-    let universe: universe::UniverseController<universe::GtkUniverseView, scenes::GtkSceneView> = {
+
+    let (mut universe, tx) = {
+        // GtkViewModel needs
+
         let model: UniverseModel<scenes::GtkSceneView> = UniverseModel {
-            current_scene: String::from(""),
-            scenes: Default::default()
+            current_scene: String::from("music"),
+            scenes: {
+                let mut map: HashMap<String, GtkScene> = Default::default();
+                map.insert(String::from("music"), scenes::default_scene());
+                map
+            }
         };
 
-        let view = GtkUniverseView::from_model(&model);
-
-        universe::UniverseController {
-            model,
-            view
-        }
+        GtkUniverse::gtk_from(model)
     };
 
-    window.set_title("test example");
+    window.set_title("briteplayer");
     window.set_default_size(1280, 720); // width 1165 for golden ratio? 🤔
     window.add(&universe.view().get_ui());
     window.show_all();
+
+    // TODO: investigate if pattern or antipattern
+    window.connect_destroy(move |_| {
+        tx.send(UniverseSignal::Destroy).unwrap();
+    });
+
+    glib::idle_add_local(move || {
+        universe.update();
+        Continue(universe.idle_looping)
+    });
 }
 
 fn main() {
@@ -77,7 +86,7 @@ fn main() {
         gio::ApplicationFlags::FLAGS_NONE
     ).expect("Application::new failed");
 
-    application.connect_activate(|app| {
+    application.connect_activate(move |app| {
         build_universe(&app);
     });
     application.run(&env::args().collect::<Vec<_>>());
@@ -94,4 +103,6 @@ pub(crate) trait Controller {
 
     fn model(&self) -> &Self::Model;
     fn view(&self) -> &Self::View;
+
+    fn update(&mut self);
 }

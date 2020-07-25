@@ -1,17 +1,54 @@
 use crate::{View, Controller, scenes};
-use gtk::prelude::IsA;
 use gtk::{ContainerExt, PanedExt, BoxExt};
-use crate::scenes::SceneView;
-use crate::nav::{GtkNavView, NavModel, NavController};
+use crate::scenes::{SceneView, GtkSceneView, SceneController};
+use crate::nav::{GtkNavView, NavController, NavModel};
 
-pub(crate) struct UniverseModel<T: SceneView> {
+pub(crate) struct UniverseModel<S: SceneView> {
     pub(crate) current_scene: String,
-    pub(crate) scenes: std::collections::HashMap<String, T>,
+    pub(crate) scenes: std::collections::HashMap<String, SceneController<S>>,
 }
+
+pub(crate) enum UniverseSignal {
+    Destroy,
+    SetScene(String)
+}
+
+pub(crate) type GtkUniverse = UniverseController<GtkUniverseView, scenes::GtkSceneView>;
 
 pub(crate) struct UniverseController<T: UniverseView, S: SceneView> {
     pub(crate) model: UniverseModel<S>,
     pub(crate) view: T,
+
+    pub(crate) sender_replica: crossbeam_channel::Sender<UniverseSignal>,
+    pub(crate) signal_receiver: crossbeam_channel::Receiver<UniverseSignal>,
+
+    pub(crate) idle_looping: bool,
+
+    nav_controller: crate::nav::NavController<GtkNavView>,
+}
+
+impl GtkUniverse {
+    pub(crate) fn gtk_from(model: UniverseModel<GtkSceneView>) -> (GtkUniverse, crossbeam_channel::Sender<UniverseSignal>) {
+        let (tx, rx) = crossbeam_channel::unbounded();
+
+        let nav_model = NavModel::default();
+        let nav_controller = NavController::<GtkNavView>::from_model(nav_model, tx.clone());
+
+        let view = GtkUniverseView::from_model(&model, &nav_controller);
+        // FIXME: this seems really messy...
+        // view.panes.add1(&nav_controller.view().get_ui());
+
+        let universe = GtkUniverse {
+            model,
+            view,
+            sender_replica: tx.clone(),
+            signal_receiver: rx,
+            idle_looping: true,
+            nav_controller
+        };
+
+        (universe, tx)
+    }
 }
 
 impl<T: UniverseView, S: SceneView> Controller for UniverseController<T, S> {
@@ -20,6 +57,22 @@ impl<T: UniverseView, S: SceneView> Controller for UniverseController<T, S> {
 
     fn model(&self) -> &Self::Model { &self.model }
     fn view(&self) -> &Self::View { &self.view }
+    fn update(&mut self) {
+        self.nav_controller.update();
+
+        while !self.signal_receiver.is_empty() {
+            match self.signal_receiver.recv().unwrap() {
+                UniverseSignal::Destroy => {
+                    self.idle_looping = false;
+                    println!("Have a nice day!");
+                },
+                UniverseSignal::SetScene(s) => {
+                    println!("set the scene to {}", s)
+                    // TODO: set the scene someehow, I guess
+                }
+            }
+        }
+    }
 }
 
 pub(crate) struct GtkUniverseView {
@@ -31,15 +84,13 @@ impl UniverseView for GtkUniverseView {
     type Scene = gtk::Widget;
     type Model = UniverseModel<scenes::GtkSceneView>;
 
-    fn from_model(model: &Self::Model) -> Self {
-        // let m = model.get_ui();
-
-        let nav_model = NavModel::default();
-        let nav_controller = NavController::<GtkNavView>::from_model(nav_model);
+    fn from_model(model: &Self::Model, nav_controller: &NavController::<GtkNavView>) -> Self {
         let navbar = nav_controller.view.get_ui();
 
         let pane_left = navbar;
-        let pane_right = scenes::default_scene().view.get_ui();
+
+        let scene = model.scenes.get(&model.current_scene).unwrap();
+        let pane_right = scene.view.get_ui();
         let panes = gtk::Paned::new(gtk::Orientation::Horizontal);
         panes.add1(&pane_left);
         panes.add2(&pane_right);
@@ -67,7 +118,7 @@ impl UniverseView for GtkUniverseView {
 pub(crate) trait UniverseView: View {
     type Scene;
     type Model;
-    fn from_model(model: &Self::Model) -> Self;
+    fn from_model(model: &Self::Model, nav_controller: &NavController<GtkNavView>) -> Self;
     fn set_scene(&self, _: &Self::Scene);
 }
 
@@ -75,5 +126,3 @@ impl View for GtkUniverseView {
     type UI = gtk::Box;
     fn get_ui(&self) -> Self::UI { self.vbox.clone() }
 }
-
-///////////////////////////////////////////////////////////////////////////////

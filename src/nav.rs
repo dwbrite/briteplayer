@@ -1,11 +1,11 @@
 use gtk::prelude::*;
-use std::rc::Rc;
-use std::sync::Mutex;
-use crate::{GreatBambino, View};
+use crate::{View, Controller};
+use crate::universe::UniverseSignal;
+use crossbeam_channel::Sender;
 
 struct NavItemModel {
     title: String,
-    idk: Option<u32>
+    scene: String
 }
 
 struct NavSectionModel {
@@ -14,10 +14,9 @@ struct NavSectionModel {
 }
 
 impl NavSectionModel {
-    fn from_vec(title: &str, child_titles: Vec<&str>) -> Self {
-        use std::iter;
-        let children: Vec<NavItemModel> = child_titles.into_iter().map(|name| -> NavItemModel {
-            NavItemModel { title: String::from(name), idk: None }
+    fn from_vec(title: &str, child_titles: Vec<(&str, &str)>) -> Self {
+        let children: Vec<NavItemModel> = child_titles.into_iter().map(|info| -> NavItemModel {
+            NavItemModel { title: String::from(info.0), scene: String::from(info.1) }
         }).collect();
 
         Self {
@@ -35,10 +34,10 @@ impl Default for NavModel {
     fn default() -> Self {
         let sections = vec![
             NavSectionModel::from_vec("Library", vec![
-                "Music", "Soundcloud", "SomaFM"
+                ("Music", "music"), ("Soundcloud", "soundcloud"), ("SomaFM", "soma")
             ]),
             NavSectionModel::from_vec("Podcasts", vec![
-                "James Earl Jones", "SpaceJam", "How I Met Your Mother"
+                ("James Earl Jones", ""), ("SpaceJam", ""), ("How I Met Your Mother", "")
             ]),
         ];
 
@@ -49,19 +48,34 @@ impl Default for NavModel {
 pub(crate) struct NavController<T: NavView> {
     model: NavModel,
     pub(crate) view: T,
+    universe_tx: crossbeam_channel::Sender<UniverseSignal>,
 }
 
 impl<T: NavView> NavController<T> {
-    pub(crate) fn from_model(model: NavModel) -> Self {
-        let view = T::from_model(&model);
+    pub(crate) fn from_model(model: NavModel, universe_tx: crossbeam_channel::Sender<UniverseSignal>) -> Self {
+        let view = T::from_model(&model, universe_tx.clone());
         Self {
             model,
             view,
+            universe_tx
         }
     }
+}
 
-    fn select_scene(tx: crossbeam_channel::Sender<TMP>, scene: &str) {
-        tx.send(TMP::PH);
+impl<T: NavView> Controller for NavController<T> {
+    type Model = NavModel;
+    type View = T;
+
+    fn model(&self) -> &Self::Model {
+        &self.model
+    }
+
+    fn view(&self) -> &Self::View {
+        &self.view
+    }
+
+    fn update(&mut self) {
+        // TODO: read from some receiver and do something, I guess, lol
     }
 }
 
@@ -77,7 +91,7 @@ struct NavListItem {
 }
 
 impl NavView for GtkNavView {
-    fn from_model(model: &NavModel) -> Self {
+    fn from_model(model: &NavModel, tx: Sender<UniverseSignal>) -> Self {
 
         let mut nav_view = GtkNavView {
             root: gtk::ScrolledWindow::new::<gtk::Adjustment, gtk::Adjustment>(None, None),
@@ -110,15 +124,19 @@ impl NavView for GtkNavView {
                 let child_row = gtk::ListBoxRow::new();
                 child_row.add(&child_label);
 
+                unsafe { child_row.set_data("scene", child.scene.clone()); }
+
                 nav_view.list.add(&child_row);
                 nav_view.list_items.push(NavListItem { row: child_row, label: child_label });
             }
         }
 
-        nav_view.list.connect_row_activated(|_this, row| {
-            // if row.is_none() { return }
-
-
+        let txc = tx.clone();
+        nav_view.list.connect_row_activated(move |_, row| {
+            unsafe {
+                let scene: &String = row.get_data("scene").unwrap();
+                txc.clone().send(UniverseSignal::SetScene(String::from(scene)));
+            }
         });
 
         nav_view.root.add(&nav_view.list);
@@ -134,9 +152,6 @@ impl View for GtkNavView {
     }
 }
 
-enum TMP { PH }
-
 pub(crate) trait NavView: View {
-    fn from_model(model: &NavModel) -> Self;
-    // fn get_sender(&self) -> crossbeam_channel::Sender<TMP>;
+    fn from_model(model: &NavModel, tx: Sender<UniverseSignal>) -> Self;
 }
