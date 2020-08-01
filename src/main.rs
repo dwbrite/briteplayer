@@ -1,29 +1,25 @@
-use relm::{connect, Relm, Update, Widget};
+mod nav;
+
+use crate::nav::Navigation;
 use gtk::prelude::*;
-use gtk::{Window, Inhibit, WindowType};
 use gtk::Orientation::Vertical;
-use relm_derive::{Msg, widget};
+use relm::{Component, Relm, Update, Widget};
+use relm_derive::{widget, Msg};
 
 #[derive(Msg)]
 pub enum Msg {
-    SetScene(usize),
     Quit,
 }
 
 pub struct UniverseModel {
-    scene_list: SceneList,
+    nav: Component<Navigation>,
 }
 
 #[widget]
 impl Widget for Universe {
-
-    fn model(_: &Relm<Self>, _: ()) -> UniverseModel {
-        UniverseModel {
-            scene_list: SceneList {
-                scenes: vec![String::from("Music"), String::from("Idfk")],
-                current_scene: 0
-            }
-        }
+    fn model(relm: &Relm<Self>, _: ()) -> UniverseModel {
+        let relm = relm::init::<Navigation>(());
+        UniverseModel { nav: relm.unwrap() }
     }
 
     fn update(&mut self, event: Msg) {
@@ -35,11 +31,38 @@ impl Widget for Universe {
 
     // Create the widgets.
     view! {
+        #[name="window"]
         gtk::Window {
+            title: "briteplayer",
+            // TODO: default_size: (1280, 720),
+            #[name="vbox"]
             gtk::Box {
                 orientation: Vertical,
-            }
-        }
+                spacing: 0,
+                #[name="scene_panes"]
+                gtk::Paned {
+                    position: 320,
+                },
+                #[name="placeholder"]
+                gtk::Entry {},
+
+
+            },
+            delete_event(_, _) => (Msg::Quit, Inhibit(false)),
+
+        },
+    }
+
+    fn init_view(&mut self) {
+        self.window.set_default_size(1280, 720); // TODO: remove
+        self.window.resize(1280, 720); // TODO: remove
+
+        self.vbox
+            .set_child_packing(&self.scene_panes, true, true, 0, gtk::PackType::Start);
+        self.vbox
+            .set_child_packing(&self.placeholder, false, true, 0, gtk::PackType::End);
+
+        self.scene_panes.add1(self.model.nav.widget());
     }
 }
 
