@@ -5,8 +5,9 @@ authors = ["Devin Brite <devin@dwbrite.com>"]
 edition = "2018"
 
 [dependencies]
-#relm = "^0.20.0"
-#relm-derive = "^0.20.0"
+linked-hash-map = "0.5.3"
+linked_hash_set = "0.1.4"
+
 gio = "0.9.0"
 glib = "0.10.1"
 gdk = "0.13.0"
