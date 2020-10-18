@@ -31,17 +31,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d290fb4a-d84c-4c4b-a2df-79af6b9debc5" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/core/mod.rs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/core/nav.rs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/core/scene/mod.rs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/core/scene/music.rs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/core/scene/spacecasts.rs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/core/universe.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/universe.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/core/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/core_ui/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/core/nav.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/core_ui/nav.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/core/scene/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/core_ui/scene/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/core/scene/music.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/core_ui/scene/music.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/core/scene/spacecasts.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/core_ui/scene/spacecasts.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/core/universe.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/core_ui/universe.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -87,6 +83,11 @@
     </key>
   </component>
   <component name="RunManager" selected="Cargo.run">
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="Expand briteplayer" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="channel" value="DEFAULT" />
       <option name="command" value="expand --bin briteplayer --color=always --theme=GitHub --tests" />
@@ -197,8 +198,16 @@
       <workItem from="1600909728342" duration="1198000" />
       <workItem from="1602640235857" duration="69000" />
       <workItem from="1602640325616" duration="4757000" />
-      <workItem from="1602977988368" duration="3644000" />
+      <workItem from="1602977988368" duration="5490000" />
     </task>
+    <task id="LOCAL-00001" summary="implement new scenes system, re-add gst playback">
+      <created>1602983413795</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1602983413795</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -215,6 +224,10 @@
       </map>
     </option>
     <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="implement new scenes system, re-add gst playback" />
+    <option name="LAST_COMMIT_MESSAGE" value="implement new scenes system, re-add gst playback" />
   </component>
   <component name="WindowStateProjectService">
     <state x="555" y="197" width="800" height="719" key="#Plugins" timestamp="1598471096276">
@@ -234,6 +247,10 @@
       <screen x="0" y="27" width="1920" height="1053" />
     </state>
     <state x="693" y="303" width="524" height="508" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.27.1920.1053@0.27.1920.1053" timestamp="1598578698941" />
+    <state x="25" y="18" width="1847" height="1023" key="CommitChangelistDialog2" timestamp="1602983413581">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="25" y="18" width="1847" height="1023" key="CommitChangelistDialog2/0.0.1920.1080@0.0.1920.1080" timestamp="1602983413581" />
     <state x="743" y="323" width="424" height="491" key="FileChooserDialogImpl" timestamp="1598472642754">
       <screen x="0" y="27" width="1920" height="1053" />
     </state>
@@ -278,6 +295,10 @@
       <screen x="0" y="27" width="1920" height="1053" />
     </state>
     <state x="464" y="188" width="992" height="737" key="SettingsEditor/0.27.1920.1053@0.27.1920.1053" timestamp="1598472716471" />
+    <state x="555" y="276" width="800" height="535" key="Vcs.Push.Dialog.v2" timestamp="1602983426353">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="555" y="276" width="800" height="535" key="Vcs.Push.Dialog.v2/0.0.1920.1080@0.0.1920.1080" timestamp="1602983426353" />
     <state x="764" y="469" width="382" height="175" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1600144617233">
       <screen x="0" y="27" width="1920" height="1053" />
     </state>
